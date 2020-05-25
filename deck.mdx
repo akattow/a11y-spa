@@ -1,0 +1,610 @@
+import myTheme from "./theme";
+export const theme = myTheme;
+
+import { Steps, Notes } from "mdx-deck";
+
+import Layout from "./layout";
+
+<Layout>
+
+# Accessibility in Single-Page Applications
+
+<br />
+
+Slides available at [spa-a11y.netlify.app](spa-a11y.netlify.app)
+
+</Layout>
+
+---
+
+<Layout>
+
+# what is accessibility?
+
+The web should be open and accessible to everyone. Our choices as developers can _enable_ or _disable_ our users.
+
+[bit.ly/w3-WCAG](https://bit.ly/w3-WCAG)
+
+[bit.ly/microsoft-inclusive-toolkit](https://bit.ly/microsoft-inclusive-toolkit)
+
+</Layout>
+
+<Notes>
+
+There is so much to cover with web accessibility - but that's out of scope for this talk. If you don't know much about web accessibility in general, I've got a couple of links here and some more at the end of the presentation. The WCAG, or Web Content Accessibility Guidelines, is the international standard for accessibility, but the documentation itself is dense. I recommend Microsoft's Inclusive Design Toolkit as a good place to start if you're brand new to thinking about accessibility. It's not just for designers!
+
+</Notes>
+
+---
+
+<Layout>
+
+# what is a11y?
+
+- A11y is a numeronym for accessibility
+- A + 11 letters + y
+- It also resembles the word 'ally'
+
+</Layout>
+
+---
+
+<Layout>
+
+# SPA a11y
+
+- semantic html
+- focus management
+- annoucements
+- debugging
+- automated testing
+
+</Layout>
+
+---
+
+<Invert>
+<Layout>
+
+# semantic HTML
+
+</Layout>
+</Invert>
+
+<Notes>
+
+If you're already on board with semantic html, hopefully you know why I need to go over it again. This isn't really a SPA-only problem, but I think it has become more prevalent with the rise of these frameworks. Tools like Angular, React, and some CSS-in-JS libraries let us create our own reusable components.
+
+</Notes>
+
+---
+
+<Layout>
+
+# reusable components... what do they render?
+
+```jsx
+<Button onClick={myFunction} />
+```
+
+</Layout>
+
+<Notes>
+
+This could render a button with an `onClick` handler. OR it could take a custom `onClick` prop and render a div.
+
+</Notes>
+
+---
+
+<Layout>
+
+# a div is not easier
+
+```html
+<div
+  role="button"
+  tabindex="0"
+  onClick="{clickHandler}"
+  onKeyDown="{keydownHandler}"
+>
+  Close
+</div>
+
+<button onClick="{clickHanlder}">Close</button>
+```
+
+</Layout>
+
+<Notes>
+
+The div needs 4 times as many properties! Both the div and the button need the onClick handler - that makes sense. But the div needs the keydown - why? Well, because buttons handle that for us automatically.
+We also have to declare the div has a role="button" so that assistive technology knows how to interact with it. And, it needs a tabIndex so that it can be reached via the keyboard. That's a lot to add, just to avoid clearing out a button's default styling.
+
+</Notes>
+
+---
+
+<Layout>
+
+# avoid dark patterns
+
+Interactive elements should clearly communicate their role.
+
+**JavaScript**: just because you _can_ doesn't mean you _should_.
+
+</Layout>
+
+<Notes>
+
+Semantic HTML can also help you avoid dark patterns. It's not hard to create an entire interactive flow that submits data to an API without ever touching anything but a div! Who needs form elements, am I right? Wrong...
+
+Let's say you have a div that is styled to look like a checkbox, handles internal checked state, and so on. It controls whether users are signing up for a subscription service when they purchase your product. If this component is constructed without semantic HTML, it may not be announced as a checkbox - or at all, depending on your markup.
+
+</Notes>
+
+---
+
+<Layout>
+
+# headings
+
+They aren't just big, bigger, biggest.
+
+<br />
+
+[bit.ly/html-headings](https://bit.ly/html-headings)
+
+</Layout>
+
+<Notes>
+
+Now, here's one that catches a lot of people up: headings. Headings are tremendously helpful to screen reader users, who can jump from one to the next to 'scan' the page, the same way a sighted reader would. Using only one h1 element and placing the rest of the headings in a logical hierarcy is tremendously helpful to SR users. But if your app is composed of reusable components that appear in different order and relationships in different parts of your app, how can you be sure your markup has a sensible heading order?
+
+</Notes>
+
+---
+
+<Layout>
+
+# reusable headings
+
+<br />
+
+```jsx
+const JsHeading = ({ headingLevel }) => {
+  const Heading = headingLevel;
+  return <Heading>{children}</Heading>;
+};
+```
+
+<br />
+
+[bit.ly/a11y-ts-headings](https://bit.ly/a11y-ts-headings)
+
+</Layout>
+
+<Notes>
+
+Depending on your app, of course, you may be able to reliably know that a certain heading will always be needed in a certain component. But if you can't be sure, you may want to create a reusable heading component like this one.
+
+I will also mention that if you use TypeScript, there's a bit more to it, but I have a short blog post on this that is linked in the slides.
+
+</Notes>
+
+---
+
+<Invert>
+<Layout>
+
+# focus management
+
+</Layout>
+</Invert>
+
+---
+
+<Layout>
+
+# it's just one div
+
+Page refreshes/reloads are how browsers communicate the change to screen readers.
+
+</Layout>
+
+<Notes>
+
+OK, this talk is about accessibility in _single-page applications_, so let's talk about that. We typically render a single root `div` and let JavaScript fake the rest. JavaScript doesn't just render the page for us, it handles changes to our view, replacing server-rendered page loads. But because these changes are all created by JavaScript, and are not actually managed by the browser, they don't get announced to screen readers. A user relying on a SR may click a link on your page and, if you haven't done anything to handle this, it'll just... stay silent. As far as the user knows, nothing happened.
+
+</Notes>
+
+---
+
+<Layout>
+
+# send them where they need to go
+
+Emulate a new server-side render by sending focus to the top of the document.
+
+Move focus to the `h1` element, which should contain the page title.
+
+[bit.ly/a11y-client-routing](https://bit.ly/a11y-client-routing)
+
+</Layout>
+
+<Notes>
+
+Depending on what the user activated, the element may no longer be on the page. Or they may still be focused on a navigation item, but if they rely on a screen reader, it seems like nothing happened. If you have a lot of navigation, the user may be stuck in the middle of it, and have to manually tab through a lot of extra links to get to your main content and discover if they got where they wanted to go.
+
+We can solve our silent "page" transitions by sending focus to an element on the new page that will be announced. That will inform the user what's happened and where they are. There are two schools of thought on where to send focus.
+
+The first method gets you closest to the server-rendered behavior users are accustomed to, but if your app has a lot of complex navigation, it might not be ideal. Hopefully you do have a skip link at the top of your page, though, so this is a good option for most apps.
+
+The second method can be a good too, depending again on the content of your app. By taking the users straight to the content after they clicked a link, you are hopefully creating less friction for those users. But this does bypass your app's navigation, and that might be a problem for some. You don't really know until you test it with real users.
+
+</Notes>
+
+---
+
+<Layout>
+
+# live announcements
+
+<Steps>
+
+- You have a new message!
+- "Do chores" removed from your todo list
+- Your changes have been saved.
+
+</Steps>
+
+</Layout>
+
+<Notes>
+
+The final problem I want to talk about isn't actually exclusive to SPAs, but it is something that pretty much every single-page app does; adding, changing, and removing elements from the DOM. Knowing how make our UI updates accessible is pretty key to SPA development.
+
+Let's say you have a chat feature in your app, or live notifications for something. You probably have a UI component that gets added to the page whenever a new message or notification comes in. But that's strictly visual. Screen readers will not, by default, announce new items rendered to the DOM.
+
+</Notes>
+
+---
+
+<Layout>
+
+# ARIA
+
+Accessible Rich Internet Applications
+
+The first rule of ARIA is don't use ARIA.
+
+</Layout>
+
+<Notes>
+
+To handle that, we need live annoucements, which rely on ARIA. ARIA is short for Accessible Rich Internet Applications, and it is a set of attributes that can make the web more accessible _when used correctly_. It's important to stress that, because incorrect or over-generous use of aria- attributes can actually really tank your accessibility, giving misleading or incorrect information.
+
+</Notes>
+
+---
+
+<Layout>
+
+# aria-live
+
+```jsx
+<div
+  aria-live="assertive"
+  aria-atomic="true"
+  id="my-live-announcer"
+  class="visually-hidden"
+></div>
+```
+
+</Layout>
+
+<Notes>
+
+The `aria-live` property is what tells the browser that this is a live region, and _once it is rendered_, subsequent changes to the content of that region will be announced to SRs. The `aria-atomic` property means that, even if only a part of the live region changes, the whole thing will be announced. Your milage with this may vary, but you should test your live region across multiple devices to determine if this attribute is needed.
+
+</Notes>
+
+---
+
+<Layout>
+
+# render and wait
+
+- render a live region before you need it
+- dynamically update the contents of the region
+- use `aria-live="polite"` or `aria-live="assertive"`
+- test with screen readers
+- [https://bit.ly/aria-live](https://bit.ly/aria-live)
+
+</Layout>
+
+<Notes>
+
+It's important to note that these annoucements only happen _after_ the live region is rendered. Dynamically adding a live-region will not result in any annoucement. Likewise, simply adding the region and then ignoring it won't actually do anything - we will need to dynamically update this div so that the changes are announced.
+
+Depending on what you're doing, you'll want to use either `aria-live="polite"` or `aria-live="assertive"`. "Polite" is supposed to wait until other SR announcements have finished, although I've had mixed results with it. "Assertive" will jump in as soon as possible to announce the change. Again, you should test this across multiple devices to figure out exactly what you need. You can also check out the MDN docs on aria-live which are a great guide.
+
+</Notes>
+
+---
+
+<Layout>
+
+# mix, match, test
+
+</Layout>
+
+<Notes>
+
+It's worth noting that not every change to the DOM should be announced. Sometimes managing focus is a better user experience - a good example of this would be a modal.
+
+You also might want to combine your live regions with focus management! For example, if you have a list of items and you delete one - well, you were just focused on it, and then you removed it from the DOM. Where does your focus go? By default, it may go back to the start of your list. A better experience might be automatically focusing on the next element in the list, while also announcing that the item was removed.
+
+The key thing to remember with focus management and live annoucements is that you need to test them to be sure they are handling these changes in a clear and understandable way, preferrably with users who rely on assistive technology. Using these techniques is key to ensuring an understandable, and hopefully good and equitable, experience for all of your users.
+
+</Notes>
+
+---
+
+<Invert>
+<Layout>
+
+# debugging
+
+</Layout>
+</Invert>
+
+<Notes>
+
+So hopefully by now you are all ready to rush back to the office tomorrow and change all your interactive `div`s to `button`s. But figuring out where in your app you need to make adjustments can be challenging, and it gets harder the larger your app is. So I want to quickly go over a few ways you can start debugging your app for a11y issues.
+
+</Notes>
+
+---
+
+<Layout>
+
+# tab testing
+
+- Tab around!
+- Safari - check advanced settings.
+- Check your focus styles.
+- Console haxx:
+
+```js
+document.body.addEventListener("focusin", (event) => {
+  console.log(document.activeElement);
+});
+```
+
+</Layout>
+
+<Notes>
+
+If your CSS has removed focus styles and you are having trouble figuring out where your focus is - well, first of all, change that CSS. But if you're still having trouble, drop this in your console for a quick hack.
+
+</Notes>
+
+---
+
+<Layout>
+
+# web extensions
+
+axe • [www.deque.com/axe/](https://www.deque.com/axe/)
+
+WAVE • [wave.webaim.org/extension/](https://wave.webaim.org/extension/)
+
+Lighthouse • [developers.google.com/web/tools/lighthouse/](https://developers.google.com/web/tools/lighthouse/)
+
+</Layout>
+
+---
+
+<Layout>
+
+# screen readers
+
+VoiceOver - Safari on OSX and iOS • [webaim.org/articles/voiceover/](https://webaim.org/articles/voiceover/)
+
+NVDA - Firefox & Chrome on Windows • [webaim.org/articles/nvda/](https://webaim.org/articles/nvda/)
+
+JAWS - IE11 and Edge • [webaim.org/articles/jaws/](https://webaim.org/articles/jaws/)
+
+</Layout>
+
+---
+
+<Layout>
+
+# gotta catch 'em all
+
+browser zoom, OS-level zoom, assistive tech
+
+[github.com/jsx-eslint/eslint-plugin-jsx-a11y](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y)
+
+</Layout>
+
+---
+
+<Invert>
+<Layout>
+
+# automated testing
+
+</Layout>
+</Invert>
+
+---
+
+<Layout>
+
+# cannot catch 'em all
+
+Only 30-50% of a11y issues can be caught by automated tools.
+
+</Layout>
+
+<Notes>
+
+The first and most important thing to know about automating accessibility testing is that you will never be able to automate all of your accessibility testing. There are a lot of accessibility issues that simply can't be automated because they're contextual. You might be able to get 30-50%, depending on the rule set you use. But things like screen readers, as well as other assistive technology, can't all be automated.
+
+</Notes>
+
+---
+
+<Layout>
+
+# focus on outcomes
+
+```js
+// arrange: render the dropdown
+// act: click the dropdown toggle button
+// assert: the first link in the dropdown should have focus
+```
+
+[testing-library.com/](https://testing-library.com/)
+
+</Layout>
+
+<Notes>
+
+What you can do is focus on user outcomes. For example: you've made a dropdown navigation component. When you open it, the first link in the nav should automatically receive focus. So you may want to write a unit test for that component along these lines.
+
+I would also recommend Kent C. Dodd's Testing Library if you aren't already using it - there are some really great matchers in there that make writing accessibility tests a lot easier.
+
+</Notes>
+
+---
+
+<Layout>
+
+# unit + integration + e2e
+
+```js
+// arrange: render route '/'
+// act: click the link to the About page
+// assert: the h1 containing the text 'About' should have focus
+```
+
+[testing-library.com/](https://testing-library.com/)
+
+</Layout>
+
+<Notes>
+
+You should also be writing e2e and integration tests for accessibility. If you missed Steven Hicks' talk at the last MilwaukeeJS on Cypress, you should ask him about it - ok, I'm not going to put him on the spot, you can Google it, it's great.
+
+I actually love writing e2e tests in Cypress, because it really encourages you to think like the user, and to focus on the outcome of your code, not the implementation. If I only had time to write unit tests or e2e tests for accessibility, I'd definitely choose to write Cypress tests.
+
+</Notes>
+
+---
+
+<Layout>
+
+# a11y testing framework APIs
+
+axe-core • [github.com/avanslaars/cypress-axe](https://github.com/dequelabs/axe-core)
+
+cypress-axe • [github.com/avanslaars/cypress-axe](https://github.com/avanslaars/cypress-axe)
+
+axe-webdriverjs • [github.com/dequelabs/axe-webdriverjs](https://github.com/dequelabs/axe-webdriverjs)
+
+WAVE • [wave.webaim.org/api/](https://wave.webaim.org/api/)
+
+Lighthouse • [developers.google.com/web/tools/lighthouse/](https://developers.google.com/web/tools/lighthouse/)
+
+</Layout>
+
+<Notes>
+
+Now, testing all of these a11y considerations might be... a lot. Especially if you think about all the a11y issues we haven't covered - this was just the SPA gotchas!
+
+Luckily, there are accessibility testing framework APIs that we can take advantage of. These are tools you can add to your testing framework and they'll just run through all the accessibility rules they keep track of.
+
+</Notes>
+
+---
+
+<Layout>
+
+# using a11y APIs
+
+cypress-axe:
+
+```js
+describe("A11y passes", () => {
+  it("accessibility check", () => {
+    cy.visit("index.html");
+    cy.contains("This page should pass axe a11y checks");
+    cy.injectAxe();
+    cy.checkA11y();
+  });
+});
+```
+
+</Layout>
+
+<Notes>
+
+Here's an example from the Cypress example recipes, using the cypress-axe package. You'll still want to write tests for component interactions. Ruleset APIs can't automate those tests, so you'll still need to cover those yourself.
+
+Ultimately, debugging and automated testing can only get you part of the way. If your company is testing with real people, make sure they're including users who rely on assistive technology. You might discover things you didn't even know existed.
+
+</Notes>
+
+---
+
+<Layout>
+
+# general resources
+
+WCAG • [w3.org/TR/WCAG21](https://www.w3.org/TR/WCAG21/)
+
+Web Accessibility Initiative at W3C • [w3.org/WAI/](https://www.w3.org/WAI/)
+
+WebAIM • [webaim.org](https://webaim.org)
+
+The A11y Project • [a11yproject.com](https://a11yproject.com)
+
+</Layout>
+
+---
+
+<Layout>
+
+# course resources
+
+Web Accessibility by Google • [bit.ly/google-a11y](https://bit.ly/google-a11y)
+
+W3 Web Accessibility • [bit.ly/W3-edX](https://bit.ly/W3-edX)
+
+Deque University • [dequeuniversity.com](https://dequeuniversity.com)
+
+</Layout>
+
+<Notes>
+
+W3 Web Accessibility - free for a few weeks
+Web Accessibility by Google - free
+Deque University - paid
+
+</Notes>
+
+---
+
+<Invert>
+<Layout>
+
+# thank you!
+
+[spa-a11y.netlify.app](spa-a11y.netlify.app)
+
+</Layout>
+</Invert>
